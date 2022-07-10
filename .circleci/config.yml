@@ -208,12 +208,11 @@ jobs:
             fingerprints: ["8b:19:5e:85:a7:2b:94:98:1a:cd:6f:36:da:8a:73:93"]
       - attach_workspace:
           at: ~/
-      - run:
-         name: Install Dependensies
-         command: |
-           pip3 install awscli
-           apk add --update ansible
-           apk add curl
+      # - run:
+      #    name: Install Dependensies
+      #    command: |
+      #      apk add --update ansible
+      #      apk add curl
       - run:
           name: Configure Server
           command: |
@@ -370,10 +369,10 @@ workflows:
               only: [test-feature-branch]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
-      # - deploy-frontend:
-      #     requires: [run-migrations]
+      - run-migrations:
+          requires: [configure-infrastructure]
+      - deploy-frontend:
+          requires: [run-migrations]
       # - deploy-backend:
       #     requires: [run-migrations]
       # - smoke-test:
