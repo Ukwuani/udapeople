@@ -195,7 +195,7 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      - destroy-environment
+      # - destroy-environment
 
   configure-infrastructure:
     docker:
@@ -215,7 +215,7 @@ jobs:
               cat inventory.txt
               ansible-playbook -i inventory.txt \
               configure-server.yml
-      - destroy-environment
+      # - destroy-environment
 
   run-migrations:
     docker:
@@ -241,8 +241,8 @@ jobs:
             then
                 curl --insecure https://kvdb.io/${KVDB_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi
-      - destroy-environment
-      - revert-migrations     
+      # - destroy-environment
+      # - revert-migrations     
 
   deploy-frontend:
     docker:
@@ -273,8 +273,8 @@ jobs:
             cd frontend
             npm run build
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-      - destroy-environment
-      - revert-migrations  
+      # - destroy-environment
+      # - revert-migrations  
 
   deploy-backend:
     docker:
@@ -305,7 +305,7 @@ jobs:
             cd ..
             cp -r backend/artifact.tar.gz .circleci/ansible/roles/deploy/files
             ls -a backend
-            ls .circleci/ansible/roles/deploy/files
+            ls -a .circleci/ansible/roles/deploy/files
       - run:
           name: Deploy backend
           command: |      
@@ -319,8 +319,8 @@ jobs:
             ls -R
             ansible-playbook -i inventory.txt deploy-backend.yml
 
-      - destroy-environment
-      - revert-migrations
+      # - destroy-environment
+      # - revert-migrations
 
   smoke-test:
     docker:
