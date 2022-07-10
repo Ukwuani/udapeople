@@ -314,8 +314,9 @@ jobs:
             cd .circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
+            ls -R
             ansible-playbook -i inventory.txt deploy-backend.yml
-            
+
       - destroy-environment
       - revert-migrations
 
@@ -418,7 +419,7 @@ workflows:
       - deploy-backend:
           requires: [run-migrations]
       - smoke-test:
-          requires: [deploy-backend, deploy-frontend]
+          requires: [ deploy-frontend]
       # - cloudfront-update:
       #     requires: [smoke-test]
       # - cleanup:
