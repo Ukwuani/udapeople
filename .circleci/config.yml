@@ -341,18 +341,21 @@ jobs:
       - run:
           name: Backend Smoke Test.
           command: |
+            BACKEND_IP=$(aws ec2 describe-instances 
+            --query 'Reservations[*].Instances[*].PublicIpAddress' 
+            --filters "Name=tag:Name,Values=${CIRCLE_WORKFLOW_ID:0:7}""
+             --output text)
             BACKEND_PUBLIC_IP=$(aws ec2 describe-instances \
-                --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-                --query 'Reservations[*].Instances[*].PublicIpAddress' \
-                --output text)
-
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --output text)
+            export API_URL="http://${BACKEND_PUBLIC_IP}:3030"
+            echo "${API_URL}  ${BACKEND_PUBLIC_IP}:3000"
             if curl "${API_URL}/api/status" | grep "ok"
             then
-                return 0
+                exit 0
             else
-                return 1
+                exit 1
             fi
       - destroy-environment
       - revert-migrations 
@@ -381,24 +384,28 @@ jobs:
       - destroy-environment
       - revert-migrations
 
-# cleanup:
-#     docker:
-#       # Docker image here
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Get old stack workflow id
-#           command: |
-#             # your code here
-#             export OldWorkflowID="the id here"
-#             export STACKS=[] #put the list of stacks here
-#       - run:
-#           name: Remove old stacks and files
-#           command: |
-#             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
-#             then
-#               # your code here
-#             fi
+cleanup:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - install_awscli
+      - install_nodejs
+      - run:
+          name: Remove old stacks and files
+          command: |
+            export STACKS=($(aws cloudformation list-stacks \
+                --query "StackSummaries[*].StackName" \
+                --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
+            echo Stack names: "${STACKS[@]}"
+            export OldWorkflowID=$(curl --insecure https://kvdb.io/${KVDB_BUCKET}/old_workflow_id)
+            echo Old Workflow ID: $OldWorkflowID 
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+              aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
+              aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
+            fi
             
 
 workflows:
@@ -429,5 +436,5 @@ workflows:
           requires: [ deploy-frontend, deploy-backend]
       - cloudfront-update:
           requires: [smoke-test]
-      # - cleanup:
-      #     requires: [cloudfront-update]
+      - cleanup:
+          requires: [cloudfront-update]
