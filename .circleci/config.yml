@@ -122,15 +122,12 @@ jobs:
             npm install
             npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
-
-
 # ====================== Deploy Infrastructure =====================
 
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
     steps:
-      # Checkout code from git
       - run:
           name: Ensure back-end infrastructure exists
           command: |
@@ -156,7 +153,7 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure      
+
 
 #   configure-infrastructure:
 #     docker:
@@ -305,7 +302,7 @@ workflows:
       - scan-frontend:
           requires: [build-frontend]
       - deploy-infrastructure:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          requires: [test-frontend, test-backend]
           filters:
             branches:
               only: [test-feature-branch]
