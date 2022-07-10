@@ -292,7 +292,7 @@ jobs:
 
 workflows:
   version: 1
-  build_and_exit:
+  build_test_and_deploy:
     jobs:
       - build-frontend
       - build-backend
