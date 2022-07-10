@@ -208,11 +208,6 @@ jobs:
             fingerprints: ["8b:19:5e:85:a7:2b:94:98:1a:cd:6f:36:da:8a:73:93"]
       - attach_workspace:
           at: ~/
-      # - run:
-      #    name: Install Dependensies
-      #    command: |
-      #      apk add --update ansible
-      #      apk add curl
       - run:
           name: Configure Server
           command: |
@@ -240,7 +235,8 @@ jobs:
             then
                 curl https://kvdb.io/${KVDB_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi
-     # Here's where you will add some code to rollback on failure      
+     - destroy-environment
+     - revert-migrations     
 
   deploy-frontend:
     docker:
@@ -250,7 +246,7 @@ jobs:
       - install_awscli
       - install_nodejs
       - restore_cache:
-          keys: [frontend-deps]
+          keys: [frontend-build]
       - run:
           name: Install dependencies
           command: |
@@ -272,23 +268,42 @@ jobs:
             npm run build
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - destroy-environment
-      - revert-migrations        
-#   deploy-backend:
-#     docker:
-#       # Docker image here that supports Ansible
-#     steps:
-#       # Checkout code from git
-#       # Add ssh keys with fingerprint
-#       # attach workspace
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # your code here
-#       - run:
-#           name: Deploy backend
-#           command: |
-#             # your code here
-#       # Here's where you will add some code to rollback on failure  
+      - revert-migrations  
+
+  deploy-backend:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - install_awscli
+      - install_ansible
+      - install_nodejs
+      - add_ssh_keys:
+          fingerprints: ["8b:19:5e:85:a7:2b:94:98:1a:cd:6f:36:da:8a:73:93"]
+      - attach_workspace:
+          at: ~/
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Install dependencies
+          command: |
+            cd backend \
+            npm install
+      - run:
+          name: Deploy backend
+          command: |
+            cd backend \
+            npm install \
+            npm run build \
+            cd .. \
+
+            tar -C backend -czvf artifact.tar.gz .
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
+      - destroy-environment
+      - revert-migrations
 
 #   smoke-test:
 #     docker:
